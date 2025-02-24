@@ -9,7 +9,7 @@ Personal email: abhichkrbrty@gmail.com
 
 
 ## Description
-The Applied Data Science program at Syracuse University equips students with the expertise needed to analyze complex data and drive data-informed decision-making. Through projects from the following courses—IST 659 (Data Administration Concepts and Database Management), IST 687 (Introduction to Data Science), IST 686 (Quantitative Reasoning for Data Science), IST 664 (Natural Language Processing), and FIN 654 (Financial Analytics)—I will demonstrate my proficiency in the program’s core learning objectives. These objectives include:<br>
+The Applied Data Science program at Syracuse University equips students with the expertise needed to analyze complex data and drive data-informed decision-making. Through projects from the following courses— IST 687 (Introduction to Data Science), IST 686 (Quantitative Reasoning for Data Science), IST 664 (Natural Language Processing), and FIN 654 (Financial Analytics)—I will demonstrate my proficiency in the program’s core learning objectives. These objectives include:<br>
 •	Data Collection & Organization: Efficiently gathering, cleaning, and structuring data for analysis.<br>
 •	Pattern Recognition & Analysis: Identifying trends and insights using visualization techniques, statistical analysis, and data mining.<br>
 •	Strategy Development: Formulating data-driven strategies to address business challenges.<br>
@@ -24,9 +24,7 @@ This combination of coursework and applied projects will highlight my ability to
 - Summary of repository purpose and content<br>
 2.	Resume
 - My Professional Resume<br>
-3.	Portfolio Milestone
+3.	Learning Outcomes Writeup
 - A paper describing the projects and learning outcomes from four of my courses<br>
-4. Portfolio Presentation
-- Video presentation summarizing my Portfolio Milestone and the slide deck used in video presentation<br>
-5.	Reference Code and Data
+4.	Reference Code and Project Report
 - Python, R, and SQL code created for the projects and any data used in the analysis<br>

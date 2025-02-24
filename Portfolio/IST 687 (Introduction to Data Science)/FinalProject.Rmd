@@ -1,207 +1,373 @@
 ---
 title: "FinalProject"
 output: pdf_document
-date: "2023-10-31"
+date: "2023-12-6"
+teamMembers: 
+"Abhi Chakraborty", 
+"David Gold",
+"Mengqi Li",
+"Vaishnavi Reddy",
+"Hayden Wasserman"
+
 ---
-
-Data Preparation
+1. Data Gathering and Initial preparation
 ```{r}
-# read data
+# Installing and loading required packages
+
+#install.packages("readr")
+#install.packages("lubridate")
+#install.packages("purrr")
 #install.packages("arrow")
-library(arrow)
-library(tidyverse)
+#install.packages("tidyverse")
+# library(readr)
+# library(lubridate)
+# library(purrr)
+# library(arrow) 
+# library(tidyverse) 
 
-StaticHouse <- arrow::read_parquet("https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/static_house_info.parquet")
+# # Reading data for Static Houses and storing it 
+# StaticHouse <- arrow::read_parquet("https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/static_house_info.parquet")
+# 
+# # Reading data for House and storing it
+# base_link <- 'https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/2023-houseData/'
 
-EnergyUsage <- arrow::read_parquet("https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/2023-houseData/102063.parquet")
+# Preparing Energy usage data
+# building_ids <- StaticHouse$bldg_id
+# 
+# # Extracting unique county names
+# county <- unique(StaticHouse$in.county)
+# 
+# # Optimizing link creation using vectorized operation
+# building_links <- paste0(base_link, building_ids, '.parquet')
+# 
+# # Setting up the dataframe to hold aggregated data
+# temporaryColumn <- read_parquet(building_links[1])
+# colnames <- colnames(temporaryColumn)
+# data <- data.frame(matrix(ncol = length(colnames), nrow = 0))
+# names(data) <- colnames
+# 
+# # Aggregating data from all building links
+# for(i in seq_along(building_links)) {
+#   temporaryColumn <- read_parquet(building_links[i])
+#   # Filter for records from July
+#   temporaryColumn <- temporaryColumn[month(temporaryColumn$time) == 7, ]
+#   # Assign the corresponding building ID
+#   temporaryColumn$bldg_id <- building_ids[i]
+#   # Bind this dataframe to the main data
+#   data <- rbind(data, temporaryColumn)
+# }
 
-MetaData <- read_csv("https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/data_dictionary.csv")
+# write.csv(data, file = "EnergyUsage.csv", row.names = FALSE)
 
-WeatherData <- read_csv("https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/weather/2023-weather-data/G4500010.csv")
+# Preparing Weather Data
+# # Constructing URLs for each county
+# county_links <- paste0(base_link, county, '.csv')
+# 
+# # Read the first CSV to get the column names and initialize an empty data frame
+# temporary <- read_csv(county_links[1])
+# data <- data.frame(matrix(ncol = length(colnames(temporary)), nrow = 0))
+# names(data) <- colnames(temporary)
+# 
+# # Reading and combining data from all CSV files
+# data <- purrr::map_df(county_links, ~ {
+#   temporary <- read_csv(.x)
+#   temporary$county_id <- county[which(county_links == .x)]
+#   temporary$date_time <- with_tz(temporary$date_time, tzone = "EST5EDT")
+#   temporary
+# })
+# 
+# # Filtering data for the month of July
+# WeatherData <- data[month(data$date_time) == 7, ]
+
+# write.csv(WeatherData, file = "weatherdata.csv", row.names = FALSE)
 ```
 
+
+
+
+
+
+
+2. Data Loading from the created datasets
+```{r}
+
+# Reading data for Static House and storing it in 
+StaticHouse <- arrow::read_parquet("https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/static_house_info.parquet")
+
+# Reading the 'EnergyUsage.csv' file 
+EnergyUsage <- read_csv("EnergyUsage.csv")
+
+# Read another CSV file named 'weatherdata.csv' and store its contents in the 'Weather' variable
+Weather<- read_csv("weatherdata.csv")
+
+```
+3. Initial cleaning of blanks values from the datasets
 ```{r}
 # cleaning NA value in each dataframe
 library(dplyr)
 
-# Use the function is.na with sum count how many NA in data
-sum(is.na(StaticHouse))
-
+# Precleaning counting blank values in the dataset 
 sum(is.na(EnergyUsage))
+sum(is.na(Weather))
+
+# Cleaning the dataset of blank values
 EnergyUsage <- na.omit(EnergyUsage)
+Weather <- na.omit(Weather)
+
+# Postcleaning counting blank values in the dataset 
 sum(is.na(EnergyUsage))
-
-sum(is.na(WeatherData))
+sum(is.na(Weather))
 ```
+
+4. Final Datasets preparation
 
 ```{r}
-# select elecetrcity columns
-electricityUsage <- EnergyUsage[,-c(25:42)]
-electricityUsage$out.electricity.total <- rowSums(electricityUsage[,1:24])
-#str(electricityUsage)
 
-# April through June electricity usage
-Pre3electUsage <- subset(electricityUsage, electricityUsage$time >= "2018-04-01 00:00:00" & electricityUsage$time <= "2018-06-30 23:00:00")
+# Processing the Energy Usage Data
 
-# April through June weather
-WeatherData <- WeatherData %>% arrange(date_time)
-Pre3Weather <- subset(WeatherData, WeatherData$date_time > "2018-03-31 19:00:00" & WeatherData$date_time < "2018-06-30 20:00:00")
+electricityUsage <- EnergyUsage[,-c(25:42)] 
+# Removing not required columns
+electricityUsage$out.electricity.total <- rowSums(electricityUsage[,1:24]) 
+# Sum the columns to get total electricity usage and storing it in column in dataset
+
+# Processing the Static House Data
+columnNames <- c("bldg_id", "in.county") 
+# Define columns to retain
+StaticHouse <- StaticHouse[, colnames(StaticHouse) %in% columnNames] 
+# Keep only specified columns
+
+# Merging Electricity Usage and Static House Data
+Data <- merge(electricityUsage, StaticHouse, by="bldg_id") 
+# Merge datasets on 'bldg_id'
+mergdata <- aggregate(out.electricity.total ~ in.county + time, data = Data, FUN = mean) 
+# Aggregate data by county and time
+mergdata <- mergdata %>% 
+  group_by(in.county, time) %>% 
+  summarise(total = sum(out.electricity.total), .groups='drop') 
+# Summarise by county and time
+
+# Final Data Merging with Weather Data
+energydata <- merge(mergdata, Weather, by.x=c("in.county","time"), by.y = c("county_id","date_time")) # Merge with Weather data
+
+# Renaming Columns for Clarity
+colnames(energydata)[4] <- 'Dry.Bulb.Temperature'
+colnames(energydata)[5] <- 'Relative.Humidity'
+colnames(energydata)[6] <- 'Wind.Speed'
+colnames(energydata)[7] <- 'Wind.Direction'
+colnames(energydata)[8] <- 'Global.Hori5zontal.Radiation'
+colnames(energydata)[9] <- 'Direct.Normal.Radiation'
+colnames(energydata)[10] <- 'Diffuse.Horizontal.Radiation'
+
+# Display the structure of the final merged data
+str(energydata)
 
 ```
 
 
-```{r}
-meragepre3 <- merge(Pre3electUsage, Pre3Weather, all.x = TRUE, by.x = "time", by.y = "date_time")
 
-colnames(meragepre3)[27] <- 'Dry.Bulb.Temperature'
-colnames(meragepre3)[28] <- 'Relative.Humidity'
-colnames(meragepre3)[29] <- 'Wind.Speed'
-colnames(meragepre3)[30] <- 'Wind.Direction'
-colnames(meragepre3)[31] <- 'Global.Horizontal.Radiation'
-colnames(meragepre3)[32] <- 'Direct.Normal.Radiation'
-colnames(meragepre3)[33] <- 'Diffuse.Horizontal.Radiation'
-
-str(meragepre3)
-
-sum(is.na(meragepre3))
-```
-
-
-```{r}
-# July electricity usage
-JulyelectUsage <- subset(electricityUsage, electricityUsage$time >= "2018-07-01 00:00:00" & electricityUsage$time <= "2018-07-31 23:00:00")
-
-# July weather
-WeatherData <- WeatherData %>% arrange(date_time)
-JulyWeather <- subset(WeatherData, WeatherData$date_time > "2018-06-30 19:00:00" & WeatherData$date_time < "2018-07-31 20:00:00")
-```
-
-```{r}
-merageJuly <- merge(JulyelectUsage, JulyWeather, all.x = TRUE, by.x = "time", by.y = "date_time" )
-
-colnames(merageJuly)[27] <- 'Dry.Bulb.Temperature'
-colnames(merageJuly)[28] <- 'Relative.Humidity'
-colnames(merageJuly)[29] <- 'Wind.Speed'
-colnames(merageJuly)[30] <- 'Wind.Direction'
-colnames(merageJuly)[31] <- 'Global.Horizontal.Radiation'
-colnames(merageJuly)[32] <- 'Direct.Normal.Radiation'
-colnames(merageJuly)[33] <- 'Diffuse.Horizontal.Radiation'
-
-str(merageJuly)
-
-sum(is.na(merageJuly))
-```
-
-
-
-Exploratory Data Analysis (EDA)
-```{r}
-summary(meragepre3)
-```
-
-
+5. Exploratory Analysis of the data 
 ```{r}
 library(ggplot2)
 
-ggplot(meragepre3, aes(x=time)) + geom_line(aes(y=out.electricity.total))
+
+# Line plot for Dry Bulb Temperature over time
+ggplot(energydata, aes(x = time, y = Dry.Bulb.Temperature)) +
+  geom_line(color = 'blue') +
+  labs(title = 'Dry Bulb Temperature over Time', x = 'Time', y = 'Temperature (°C)')
+```
+
+```{r}
+# Line plot for Relative Humidity over time
+ggplot(energydata, aes(x = time, y = Relative.Humidity)) +
+  geom_line(color = 'green') +
+  labs(title = 'Relative Humidity over Time', x = 'Time', y = 'Relative Humidity (%)')
+```
+
+```{r}
+# Scatter plot for the relationship between Dry Bulb Temperature and total electricity usage
+ggplot(energydata, aes(x = Dry.Bulb.Temperature, y = total)) +
+  geom_point(color = 'red') +
+  labs(title = 'Temperature and total electricity usage', x = 'Temperature (°C)', y = 'Total electricity usage (kWh)')
+```
+
+```{r}
+# Histogram for Wind Speed
+ggplot(energydata, aes(x = Wind.Speed)) +
+  geom_histogram(bins = 10, fill = 'cyan') +
+  labs(title = 'Histogram of Wind Speed', x = 'Wind Speed (m/s)', y = 'Frequency')
+
 ```
 
 
+
+6. Building Initial Model on the acquired dataset
 ```{r}
-ggplot(merageJuly, aes(x=time)) + geom_line(aes(y=out.electricity.total))
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-
-```{r}
-# seting train and test set
-#trainset <- meragepre3[1:1747, ]
-#testset <- meragepre3[1748:2184, ]
-
-# build model
-model1 <- lm(formula = out.electricity.total ~ Dry.Bulb.Temperature + Relative.Humidity  + Wind.Speed + 
-               Wind.Direction + Global.Horizontal.Radiation + Direct.Normal.Radiation + 
-               Diffuse.Horizontal.Radiation, data = meragepre3)
+model1 <- lm(total ~ Dry.Bulb.Temperature + Relative.Humidity + Wind.Speed + 
+              Direct.Normal.Radiation + Diffuse.Horizontal.Radiation, data = energydata)
 summary(model1)
 ```
 
-
+7. Grouping Attributes in the dataset to increase accuracy of the model
 ```{r}
-model2 <- lm(formula = out.electricity.total ~ Dry.Bulb.Temperature + Relative.Humidity  + Global.Horizontal.Radiation + Direct.Normal.Radiation + 
-               Diffuse.Horizontal.Radiation, data = meragepre3)
+newenergydata <- energydata
+newenergydata$time <- as.POSIXct(newenergydata$time, format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC")
+
+# Add new variables that might capture more complex relationships
+newenergydata <- newenergydata%>%
+  mutate(
+    hour = hour(time),
+    day_of_week = wday(time),
+    month = month(time),
+    temperature_squared = Dry.Bulb.Temperature^2,
+    humidity_interaction = Dry.Bulb.Temperature * Relative.Humidity
+  )
+
+# Summarize by in.county and potentially meaningful time blocks like day_of_week or month
+newenergydata <- newenergydata %>%
+  group_by(in.county, hour) %>%
+  summarise(
+    total = sum(total),
+    temperature = mean(Dry.Bulb.Temperature),
+    temperature_squared = mean(temperature_squared),
+    humidity = mean(Relative.Humidity),
+    humidity_interaction = mean(humidity_interaction),
+    windSpeed = mean(Wind.Speed),
+    windDirection = mean(Wind.Direction),
+    GlobalHorizontalRadiation = mean(Global.Horizontal.Radiation),
+    DirectNormalRadiation = mean(Direct.Normal.Radiation),
+    DiffuseHorizontalRadiation = mean(Diffuse.Horizontal.Radiation),
+    .groups = 'drop'
+  )
+
+
+model2 <- lm(total ~ temperature + temperature_squared + humidity + humidity_interaction + windSpeed + windDirection + GlobalHorizontalRadiation + DirectNormalRadiation + DiffuseHorizontalRadiation, data = newenergydata)
+
 summary(model2)
+
+```
+
+8. Creating new weather dataset with increased temperature by 5 degrees
+
+```{r}
+
+# Copy data from 'energydata' to a new variable 'EnergyUsageFive' for manipulation
+EnergyUsageFive <- energydata
+# Increase the 'Dry.Bulb.Temperature' by 5 units in 'EnergyUsageFive'
+EnergyUsageFive$Dry.Bulb.Temperature <- EnergyUsageFive$Dry.Bulb.Temperature + 5
+
+# Convert the 'time' column to POSIXct format with UTC timezone
+EnergyUsageFive$time <- as.POSIXct(EnergyUsageFive$time, format = "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC")
+
+# Add new variables to capture complex relationships in 'EnergyUsageFive'
+EnergyUsageFive <- EnergyUsageFive %>%
+  mutate(
+    hour = hour(time),
+    day_of_week = wday(time),
+    month = month(time),
+    temperature_squared = Dry.Bulb.Temperature^2,
+    humidity_interaction = Dry.Bulb.Temperature * Relative.Humidity
+  )
+
+# Aggregate 'EnergyUsageFive' by 'in.county' and 'hour', summarizing various weather conditions and interactions
+EnergyUsageFive <- EnergyUsageFive %>%
+  group_by(in.county, hour) %>%
+  summarise(
+    total = sum(total),
+    temperature = mean(Dry.Bulb.Temperature),
+    temperature_squared = mean(temperature_squared),
+    humidity = mean(Relative.Humidity),
+    humidity_interaction = mean(humidity_interaction),
+    windSpeed = mean(Wind.Speed),
+    windDirection = mean(Wind.Direction),
+    GlobalHorizontalRadiation = mean(Global.Horizontal.Radiation),
+    DirectNormalRadiation = mean(Direct.Normal.Radiation),
+    DiffuseHorizontalRadiation = mean(Diffuse.Horizontal.Radiation),
+    .groups = 'drop'
+  )
+
+# Generate predictions for July using 'model2' and the modified 'EnergyUsageFive' data
+July_Predictions <- predict(model2, newdata = EnergyUsageFive)
+
+# Create a data frame 'July_Predictions_DF' to compare actual values with predictions
+July_Predictions_DF <- data.frame(
+  Time = EnergyUsageFive$hour, 
+  County = EnergyUsageFive$in.county,
+  Actual = EnergyUsageFive$total,
+  Predicted = July_Predictions, 
+  Difference =  EnergyUsageFive$total - July_Predictions)
+
+# Display the structure of 'July_Predictions_DF'
+str(July_Predictions_DF)
+
+```
+
+9. Evaluating peak future Energy Demand
+
+```{r}
+# Calculate the maximum predicted electricity demand in the dataset 'July_Predictions_DF'
+peak_demand <- max(July_Predictions_DF$Predicted)
+
+# Identify the time (hour of the day from 0 to 23) corresponding to the peak demand
+# 'which.max()' finds the index of the maximum value and is used to retrieve the corresponding time
+peak_demand_time <- July_Predictions_DF$Time[which.max(July_Predictions_DF$Predicted)]
+
+# Print the time of peak demand
+peak_demand_time
+
+```
+
+10. Analysing current Energy demands over time
+```{r}
+library(ggplot2)
+
+ggplot(July_Predictions_DF, aes(x = Time, y = Actual)) +
+  geom_line() +  # Line plot of energy demand over time
+  geom_point(aes(x = peak_demand_time, y = peak_demand), color = "red", size = 4) +  # Point to show peak demand
+  ggtitle("Energy Demand Over Time") +
+  xlab("Time") +
+  ylab("Actual Energy Demand") +
+  theme_minimal()
+
+```
+
+11. Different Analysis of future peak energy demand in different regions
+```{r}
+July_Predictions_DF <- data.frame(
+  Time = temp5$hour, 
+  County = temp5$in.county,
+  Actual = temp5$total,
+  Predicted = July_Predictions, 
+  Difference =  temp5$total - July_Predictions)
 ```
 
 
 ```{r}
-model3 <- lm(formula = out.electricity.total ~ Dry.Bulb.Temperature + Relative.Humidity  + Global.Horizontal.Radiation + Diffuse.Horizontal.Radiation, data = meragepre3)
-summary(model3)
+
+# Group by county and summarize the total actual energy usage
+energy_usage_by_county <- July_Predictions_DF %>%
+  group_by(County) %>%
+  summarise(Total_Pred = sum(Predicted))
+
+# Creating a bar plot
+ggplot(energy_usage_by_county, aes(x = County, y = Total_Pred, fill = County)) +
+  geom_bar(stat = "identity") +  # Use identity to tell ggplot that the y values are already calculated
+  theme_minimal() +
+  labs(title = "Total Energy Usage by County",
+       x = "County",
+       y = "Total Energy Usage") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Rotate the x labels for readability
+
 ```
-
-
-```{r}
-predJuly <- predict(model2, newdata = merageJuly)
-predJuly
-```
-
-
-```{r}
-# create a data frame with the predictions, actual values, and the differences
-JulyPred_DF <- data.frame(
-  Time = merageJuly$time, 
-  Actual = merageJuly$out.electricity.total,
-  Predicted = predJuly, 
-  Difference = merageJuly$out.electricity.total - predJuly)
-
-str(JulyPred_DF)
-```
-
 
 ```{r}
 
-```
-
-
-```{r}
-
-```
-
-
-```{r}
+# Creating heatmap of the Enery usage by region and time
+ggplot(July_Predictions_DF, aes(x=Time, y=County, fill=Predicted)) + 
+  geom_tile() + 
+  scale_fill_gradient(low="blue", high="red") +
+  theme_minimal() +
+  labs(x="Time", y="Region", title="Heatmap of Energy Usage by Region and Time")
 
 ```
 
 
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
