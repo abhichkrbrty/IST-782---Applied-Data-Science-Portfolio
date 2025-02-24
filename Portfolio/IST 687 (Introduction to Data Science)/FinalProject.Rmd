@@ -1,0 +1,207 @@
+---
+title: "FinalProject"
+output: pdf_document
+date: "2023-10-31"
+---
+
+Data Preparation
+```{r}
+# read data
+#install.packages("arrow")
+library(arrow)
+library(tidyverse)
+
+StaticHouse <- arrow::read_parquet("https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/static_house_info.parquet")
+
+EnergyUsage <- arrow::read_parquet("https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/2023-houseData/102063.parquet")
+
+MetaData <- read_csv("https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/data_dictionary.csv")
+
+WeatherData <- read_csv("https://intro-datascience.s3.us-east-2.amazonaws.com/SC-data/weather/2023-weather-data/G4500010.csv")
+```
+
+```{r}
+# cleaning NA value in each dataframe
+library(dplyr)
+
+# Use the function is.na with sum count how many NA in data
+sum(is.na(StaticHouse))
+
+sum(is.na(EnergyUsage))
+EnergyUsage <- na.omit(EnergyUsage)
+sum(is.na(EnergyUsage))
+
+sum(is.na(WeatherData))
+```
+
+```{r}
+# select elecetrcity columns
+electricityUsage <- EnergyUsage[,-c(25:42)]
+electricityUsage$out.electricity.total <- rowSums(electricityUsage[,1:24])
+#str(electricityUsage)
+
+# April through June electricity usage
+Pre3electUsage <- subset(electricityUsage, electricityUsage$time >= "2018-04-01 00:00:00" & electricityUsage$time <= "2018-06-30 23:00:00")
+
+# April through June weather
+WeatherData <- WeatherData %>% arrange(date_time)
+Pre3Weather <- subset(WeatherData, WeatherData$date_time > "2018-03-31 19:00:00" & WeatherData$date_time < "2018-06-30 20:00:00")
+
+```
+
+
+```{r}
+meragepre3 <- merge(Pre3electUsage, Pre3Weather, all.x = TRUE, by.x = "time", by.y = "date_time")
+
+colnames(meragepre3)[27] <- 'Dry.Bulb.Temperature'
+colnames(meragepre3)[28] <- 'Relative.Humidity'
+colnames(meragepre3)[29] <- 'Wind.Speed'
+colnames(meragepre3)[30] <- 'Wind.Direction'
+colnames(meragepre3)[31] <- 'Global.Horizontal.Radiation'
+colnames(meragepre3)[32] <- 'Direct.Normal.Radiation'
+colnames(meragepre3)[33] <- 'Diffuse.Horizontal.Radiation'
+
+str(meragepre3)
+
+sum(is.na(meragepre3))
+```
+
+
+```{r}
+# July electricity usage
+JulyelectUsage <- subset(electricityUsage, electricityUsage$time >= "2018-07-01 00:00:00" & electricityUsage$time <= "2018-07-31 23:00:00")
+
+# July weather
+WeatherData <- WeatherData %>% arrange(date_time)
+JulyWeather <- subset(WeatherData, WeatherData$date_time > "2018-06-30 19:00:00" & WeatherData$date_time < "2018-07-31 20:00:00")
+```
+
+```{r}
+merageJuly <- merge(JulyelectUsage, JulyWeather, all.x = TRUE, by.x = "time", by.y = "date_time" )
+
+colnames(merageJuly)[27] <- 'Dry.Bulb.Temperature'
+colnames(merageJuly)[28] <- 'Relative.Humidity'
+colnames(merageJuly)[29] <- 'Wind.Speed'
+colnames(merageJuly)[30] <- 'Wind.Direction'
+colnames(merageJuly)[31] <- 'Global.Horizontal.Radiation'
+colnames(merageJuly)[32] <- 'Direct.Normal.Radiation'
+colnames(merageJuly)[33] <- 'Diffuse.Horizontal.Radiation'
+
+str(merageJuly)
+
+sum(is.na(merageJuly))
+```
+
+
+
+Exploratory Data Analysis (EDA)
+```{r}
+summary(meragepre3)
+```
+
+
+```{r}
+library(ggplot2)
+
+ggplot(meragepre3, aes(x=time)) + geom_line(aes(y=out.electricity.total))
+```
+
+
+```{r}
+ggplot(merageJuly, aes(x=time)) + geom_line(aes(y=out.electricity.total))
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+
+```{r}
+# seting train and test set
+#trainset <- meragepre3[1:1747, ]
+#testset <- meragepre3[1748:2184, ]
+
+# build model
+model1 <- lm(formula = out.electricity.total ~ Dry.Bulb.Temperature + Relative.Humidity  + Wind.Speed + 
+               Wind.Direction + Global.Horizontal.Radiation + Direct.Normal.Radiation + 
+               Diffuse.Horizontal.Radiation, data = meragepre3)
+summary(model1)
+```
+
+
+```{r}
+model2 <- lm(formula = out.electricity.total ~ Dry.Bulb.Temperature + Relative.Humidity  + Global.Horizontal.Radiation + Direct.Normal.Radiation + 
+               Diffuse.Horizontal.Radiation, data = meragepre3)
+summary(model2)
+```
+
+
+```{r}
+model3 <- lm(formula = out.electricity.total ~ Dry.Bulb.Temperature + Relative.Humidity  + Global.Horizontal.Radiation + Diffuse.Horizontal.Radiation, data = meragepre3)
+summary(model3)
+```
+
+
+```{r}
+predJuly <- predict(model2, newdata = merageJuly)
+predJuly
+```
+
+
+```{r}
+# create a data frame with the predictions, actual values, and the differences
+JulyPred_DF <- data.frame(
+  Time = merageJuly$time, 
+  Actual = merageJuly$out.electricity.total,
+  Predicted = predJuly, 
+  Difference = merageJuly$out.electricity.total - predJuly)
+
+str(JulyPred_DF)
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```

@@ -9,7 +9,7 @@ Personal email: abhichkrbrty@gmail.com
 
 
 ## Description
-The Applied Data Science program at Syracuse University equips students with the expertise needed to analyze complex data and drive data-informed decision-making. Through projects from the following courses—IST 659 (Data Administration Concepts and Database Management), IST 687 (Introduction to Data Science), IST 707 (Applied Machine Learning), IST 664 (Natural Language Processing), and FIN 654 (Financial Analytics)—I will demonstrate my proficiency in the program’s core learning objectives. These objectives include:<br>
+The Applied Data Science program at Syracuse University equips students with the expertise needed to analyze complex data and drive data-informed decision-making. Through projects from the following courses—IST 659 (Data Administration Concepts and Database Management), IST 687 (Introduction to Data Science), IST 686 (Quantitative Reasoning for Data Science), IST 664 (Natural Language Processing), and FIN 654 (Financial Analytics)—I will demonstrate my proficiency in the program’s core learning objectives. These objectives include:<br>
 •	Data Collection & Organization: Efficiently gathering, cleaning, and structuring data for analysis.<br>
 •	Pattern Recognition & Analysis: Identifying trends and insights using visualization techniques, statistical analysis, and data mining.<br>
 •	Strategy Development: Formulating data-driven strategies to address business challenges.<br>
